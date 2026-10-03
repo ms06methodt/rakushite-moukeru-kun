@@ -7,7 +7,7 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// Coincheck ご主人様の実保有資産マスターデータ（初期値: 総額約16,601円）
+// Coincheck 全取扱銘柄マスターデータ
 const COIN_MASTER = [
   { id: 'BTC', name: 'ビットコイン', symbol: 'BTC/JPY', price: 13580000, change: 1.38, amount: 0, isOwned: false, color: '#F7931A' },
   { id: 'ETH', name: 'イーサリアム', symbol: 'ETH/JPY', price: 412000, change: 2.15, amount: 0.01212994, isOwned: true, color: '#627EEA' },
@@ -158,35 +158,55 @@ const MULTI_COIN_CYBER_HTML = `<!DOCTYPE html>
     .q-btn.p { background: rgba(191,90,242,0.1); border-color: rgba(191,90,242,0.4); color: #DF9BFF; }
 
     /* Modals */
-    .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 100; justify-content: center; align-items: center; padding: 12px; }
+    .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 100; justify-content: center; align-items: center; padding: 10px; }
     .modal.active { display: flex; }
-    .modal-box { background: #07101E; border-radius: 16px; width: 100%; max-width: 480px; max-height: 90vh; border: 1.5px solid #00FF66; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 0 30px rgba(0,255,102,0.3); }
+    .modal-box { background: #07101E; border-radius: 16px; width: 100%; max-width: 480px; max-height: 92vh; border: 1.5px solid #00FF66; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 0 30px rgba(0,255,102,0.3); }
     .modal-hdr { background: #091526; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #122540; }
     .modal-title { color: #00FF66; font-size: 13px; font-weight: 800; }
     .modal-close { background: #162842; color: #A0B8D4; border: none; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 11px; }
     
     /* Scrollable Asset List */
-    .modal-body { padding: 12px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 8px; }
+    .modal-body { padding: 10px 12px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 8px; }
     
     /* Sticky Modal Footer */
     .modal-ftr { background: #071222; border-top: 1.5px solid #153054; padding: 10px 14px; display: flex; flex-direction: column; gap: 6px; box-shadow: 0 -4px 12px rgba(0,0,0,0.4); }
     .modal-ftr-summary { display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: #00F0FF; font-weight: bold; }
-    .modal-ftr-val { font-size: 15px; font-family: monospace; color: #FFF; font-weight: 900; }
+    .modal-ftr-val { font-size: 16px; font-family: monospace; color: #FFF; font-weight: 900; }
     .modal-ftr-btn { background: #00FF66; color: #031208; border: none; padding: 12px; border-radius: 8px; font-weight: 900; font-size: 13px; cursor: pointer; box-shadow: 0 0 14px rgba(0,255,102,0.5); text-align: center; }
     .modal-ftr-btn:hover { background: #33FF88; }
     
-    /* Asset Edit Inputs */
-    .asset-row { background: #0A162B; border: 1px solid #193457; border-radius: 8px; padding: 8px 10px; display: flex; justify-content: space-between; align-items: center; }
-    .asset-input-wrap { display: flex; align-items: center; gap: 4px; }
-    .asset-input { width: 105px; background: #050C18; border: 1.5px solid #00F0FF66; border-radius: 6px; padding: 6px 6px; color: #00FF66; font-family: monospace; font-weight: bold; font-size: 13px; text-align: right; }
-    .btn-zero-clear { background: #2A1220; border: 1px solid #882244; color: #FF7799; font-size: 10px; font-weight: bold; padding: 6px 8px; border-radius: 4px; cursor: pointer; }
-    .btn-zero-clear:hover { background: #FF3366; color: #FFF; }
-    .asset-subval { font-size: 10px; color: #7B93B2; font-family: monospace; text-align: right; margin-top: 2px; }
+    /* Demo Quick Preset Bar */
+    .preset-toolbar { display: flex; flex-direction: column; gap: 6px; background: #09162A; border: 1px solid #1A3459; border-radius: 10px; padding: 8px 10px; }
+    .preset-title { font-size: 10px; color: #7B93B2; font-weight: bold; }
+    .preset-btns-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .preset-btn { background: #0F223D; border: 1px solid #1C4273; color: #00F0FF; font-size: 10px; font-weight: bold; padding: 6px 6px; border-radius: 6px; cursor: pointer; text-align: center; }
+    .preset-btn:hover { background: #00F0FF; color: #000; }
+    .preset-btn.owner { background: #00FF6618; border-color: #00FF66; color: #00FF66; }
+    .preset-btn.owner:hover { background: #00FF66; color: #000; }
+    .preset-btn.danger { background: #2A1220; border-color: #882244; color: #FF7799; grid-column: span 2; }
+    .preset-btn.danger:hover { background: #FF3366; color: #FFF; }
 
-    /* Top quick reset bar */
-    .asset-action-toolbar { display: flex; justify-content: space-between; align-items: center; background: #09162A; border: 1px solid #1A3459; border-radius: 8px; padding: 8px 10px; gap: 6px; }
-    .btn-clear-all { background: #122B22; border: 1px solid #00FF66; color: #00FF66; font-size: 11px; font-weight: bold; padding: 6px 8px; border-radius: 6px; cursor: pointer; flex: 1; }
-    .btn-clear-all:hover { background: #00FF66; color: #000; }
+    /* Dual Converter Asset Card */
+    .asset-card { background: #091526; border: 1px solid #183152; border-radius: 10px; padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; }
+    .asset-card-hdr { display: flex; justify-content: space-between; align-items: center; }
+    .asset-coin-info { display: flex; align-items: center; gap: 6px; }
+    .coin-dot { font-size: 14px; }
+    .coin-sym { font-size: 12px; font-weight: 900; color: #FFF; }
+    .coin-jp { font-size: 11px; color: #A0B8D4; }
+    .coin-rate { font-size: 9px; color: #5E7C9E; font-family: monospace; }
+    .btn-zero-clear { background: #2A1220; border: 1px solid #882244; color: #FF7799; font-size: 10px; font-weight: bold; padding: 3px 8px; border-radius: 4px; cursor: pointer; }
+    .btn-zero-clear:hover { background: #FF3366; color: #FFF; }
+
+    /* Dual Input Row */
+    .asset-inputs-grid { display: grid; grid-template-columns: 1fr 20px 1fr; gap: 4px; align-items: center; }
+    .input-field-box { display: flex; flex-direction: column; gap: 2px; }
+    .field-lbl { font-size: 9px; color: #7B93B2; font-weight: bold; }
+    .field-wrap { display: flex; align-items: center; background: #050C18; border: 1px solid #183354; border-radius: 6px; padding: 2px 6px; }
+    .field-wrap:focus-within { border-color: #00FF66; }
+    .num-inp { width: 100%; background: transparent; border: none; outline: none; color: #00FF66; font-family: monospace; font-weight: bold; font-size: 12px; text-align: right; }
+    .num-inp.yen { color: #00F0FF; }
+    .field-unit { font-size: 10px; color: #7B93B2; margin-left: 4px; font-weight: bold; }
+    .input-arrow { text-align: center; color: #5E7C9E; font-size: 11px; font-weight: bold; }
 
     /* Reorder items */
     .reorder-item { background: #0A162B; border: 1px solid #193457; border-radius: 8px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; }
@@ -218,7 +238,7 @@ const MULTI_COIN_CYBER_HTML = `<!DOCTYPE html>
     <div class="ribbon-control-bar">
       <div class="filter-toggles">
         <button class="filter-btn active" id="btnFilterAll" onclick="setFilter('ALL')" title="Coincheck全16銘柄の相場を表示">🌐 全銘柄</button>
-        <button class="filter-btn" id="btnFilterOwned" onclick="setFilter('OWNED')" title="ご主人様が保有している4銘柄のみ表示">💼 保有中のみ (4銘柄)</button>
+        <button class="filter-btn" id="btnFilterOwned" onclick="setFilter('OWNED')" title="ご主人様が保有している銘柄のみ表示">💼 保有中のみ</button>
       </div>
       <div class="sort-actions">
         <span style="font-size:9px;color:#7B93B2;">並び順:</span>
@@ -305,25 +325,31 @@ const MULTI_COIN_CYBER_HTML = `<!DOCTYPE html>
     </div>
   </div>
 
-  <!-- Asset Registration Modal -->
+  <!-- Asset Registration Modal (双方向リアルタイム自動換算 & デモプリセット搭載) -->
   <div class="modal" id="assetModal">
     <div class="modal-box">
       <div class="modal-hdr">
-        <span class="modal-title">💼 ご主人様の仮想通貨所持数 登録・変更</span>
+        <span class="modal-title">💼 資産登録・リアルタイム円換算＆デモ設定</span>
         <button class="modal-close" onclick="closeAssetModal()">✕ 閉じる</button>
       </div>
       <div class="modal-body">
         <div style="background:#00FF6615;border:1px solid #00FF6644;border-radius:8px;padding:8px;font-size:11px;color:#A2FFCE;">
-          ✨ Coincheckで実際に保有している数量を入力してください！<br>
-          入力するだけで<b>即時自動保存</b>されます。
+          💡 <b>【枚数】</b>または<b>【日本円金額】</b>のどちらかを入力すると、最新相場で相互に<b>即時自動計算＆保存</b>されます！
         </div>
 
-        <div class="asset-action-toolbar">
-          <button class="btn-clear-all" onclick="resetToOwnerRealAssets()">🔄 ご主人様の試算（¥16,601）に初期化</button>
-          <button class="btn-clear-all" style="background:#2A1220;border-color:#882244;color:#FF7799;" onclick="clearAllHoldingsToZero()">🧹 全銘柄を0枚にする</button>
+        <!-- デモ＆実資産クイック設定バー -->
+        <div class="preset-toolbar">
+          <div class="preset-title">⚡ クイック資産・デモ資金プリセット:</div>
+          <div class="preset-btns-grid">
+            <button class="preset-btn owner" onclick="applyOwnerPreset()">💼 ご主人様の実保有 (¥16,601)</button>
+            <button class="preset-btn" onclick="applyDemoPreset(100000)">🚀 10万円デモ運用</button>
+            <button class="preset-btn" onclick="applyDemoPreset(50000)">💰 5万円デモ運用</button>
+            <button class="preset-btn" onclick="applyDemoPreset(1000000)">🔥 100万円本格デモ</button>
+            <button class="preset-btn danger" onclick="clearAllHoldingsToZero()">🧹 全銘柄を0枚にする（リセット）</button>
+          </div>
         </div>
 
-        <div id="assetInputList" style="display:flex;flex-direction:column;gap:6px;"></div>
+        <div id="assetInputList" style="display:flex;flex-direction:column;gap:8px;"></div>
       </div>
 
       <!-- 固定フッター（常に下部に表示） -->
@@ -364,7 +390,7 @@ const MULTI_COIN_CYBER_HTML = `<!DOCTYPE html>
         <div class="proposal-card" style="background:#0A1526;border-radius:10px;padding:12px;border:1px solid #193457;">
           <div style="color:#00F0FF;font-weight:bold;font-size:11px;">B: AIデイトレからの実資産改善提案</div>
           <div style="color:#FFF;font-size:12px;font-weight:bold;margin:2px 0;">所持銘柄の利確スピード調整</div>
-          <div style="color:#A0B8D4;font-size:11px;margin:4px 0 8px 0;">ご主人様が保有中のDOGE/ETH/SHIB/XRPの急騰時、+4%で利確するか、+10%まで引っ張るかのご指示を仰ぎたく存じます。</div>
+          <div style="color:#A0B8D4;font-size:11px;margin:4px 0 8px 0;">ご主人様が保有中の銘柄の急騰時、+4%で利確するか、+10%まで引っ張るかのご指示を仰ぎたく存じます。</div>
           <div onclick="applyTuning('A')" style="background:rgba(0,240,255,0.08);border:1.5px solid rgba(0,240,255,0.4);color:#00F0FF;padding:10px;border-radius:8px;margin-top:6px;cursor:pointer;">【A】電光石火（+4%で確実に利確・勝率最優先）</div>
           <div onclick="applyTuning('B')" style="background:rgba(191,90,242,0.08);border:1.5px solid rgba(191,90,242,0.4);color:#DF9BFF;padding:10px;border-radius:8px;margin-top:6px;cursor:pointer;">【B】爆益追従（+10%超の爆発トレンドまでホールド）</div>
           <div id="tuningStatus"></div>
@@ -406,15 +432,15 @@ const MULTI_COIN_CYBER_HTML = `<!DOCTYPE html>
       BCH: 0, LTC: 0, SAND: 0, CHZ: 0, XLM: 0, ETC: 0, IOST: 0
     };
 
-    // ローカルストレージからご主人様の所持数を読み込み（旧誤入力は自動クリーンアップ）
+    // ローカルストレージからご主人様の所持数を読み込み
     function loadSavedAmounts() {
       try {
         const saved = localStorage.getItem('rakushite_my_holdings');
-        const isV4 = localStorage.getItem('rakushite_preset_v4');
+        const isV5 = localStorage.getItem('rakushite_preset_v5');
 
-        if (!saved || !isV4) {
+        if (!saved || !isV5) {
           localStorage.setItem('rakushite_my_holdings', JSON.stringify(REAL_OWNER_PRESET));
-          localStorage.setItem('rakushite_preset_v4', 'true');
+          localStorage.setItem('rakushite_preset_v5', 'true');
           if (fundData) {
             fundData.coins.forEach(c => {
               c.amount = REAL_OWNER_PRESET[c.id] || 0;
@@ -426,7 +452,6 @@ const MULTI_COIN_CYBER_HTML = `<!DOCTYPE html>
 
         if (saved && fundData) {
           const parsed = JSON.parse(saved);
-          // 誤って入力された旧7300万円データ（1000以上のXRP等）を検知した場合は自動修正
           if (parsed.XRP > 1000 || parsed.DOGE > 10000 || parsed.SHIB > 2000000) {
             localStorage.setItem('rakushite_my_holdings', JSON.stringify(REAL_OWNER_PRESET));
             fundData.coins.forEach(c => {
@@ -447,7 +472,7 @@ const MULTI_COIN_CYBER_HTML = `<!DOCTYPE html>
     }
 
     let chatHistory = [
-      { sender: 'butler', text: 'ご主人様、実保有資産連動ファンドへようこそ！ご主人様がお持ちの4銘柄（DOGE: 251.7枚, ETH: 0.0121枚, SHIB: 138.5万枚, XRP: 11.5枚）のリアルな評価額（約¥16,601）に完全同期して自律運用エンジンが24時間体制で稼働しております！' }
+      { sender: 'butler', text: 'ご主人様、実保有資産連動ファンドへようこそ！ご主人様がお持ちの仮想通貨の枚数、または日本円金額を自由に入力・変更して運用デモをお楽しみいただけます！' }
     ];
 
     async function fetchStatus() {
@@ -600,14 +625,14 @@ const MULTI_COIN_CYBER_HTML = `<!DOCTYPE html>
         \`).join('');
       } else {
         allocBar.innerHTML = '<div style="width:100%;background:#1A2C46;color:#7B93B2;font-size:9px;text-align:center;line-height:10px;">所持数がすべて0枚です</div>';
-        allocLegend.innerHTML = '<span style="color:#7B93B2;font-size:10px;">「💼 資産登録」ボタンからお持ちの仮想通貨の枚数を入力してください。</span>';
+        allocLegend.innerHTML = '<span style="color:#7B93B2;font-size:10px;">「💼 資産登録」ボタンからお持ちの仮想通貨の枚数または金額を入力してください。</span>';
       }
 
       // Dynamic Pockets based on owned coins
       const topOwned = [...ownedCoins].sort((a, b) => b.holdingVal - a.holdingVal);
-      const mainCoin1 = topOwned[0] ? topOwned[0].id : 'DOGE';
+      const mainCoin1 = topOwned[0] ? topOwned[0].id : 'BTC';
       const mainCoin2 = topOwned[1] ? topOwned[1].id : 'ETH';
-      const mainCoin3 = topOwned[2] ? topOwned[2].id : 'SHIB';
+      const mainCoin3 = topOwned[2] ? topOwned[2].id : 'XRP';
 
       const baseVal = totalNetWorth > 0 ? totalNetWorth : 16600;
       const pocketA_PnL = Math.round(baseVal * 0.0088 + 25);
@@ -623,7 +648,7 @@ const MULTI_COIN_CYBER_HTML = `<!DOCTYPE html>
           <div class="pocket-desc">戦略: 実保有資産ボリンジャー逆張り＆RSI防御</div>
           <div class="pocket-status">
             <span style="color:#00FF66;">●</span>
-            <span>🟢 ご主人様の実保有\${mainCoin2}/\${mainCoin1}の押し目防壁稼働中</span>
+            <span>🟢 ご主人様の実保有\${mainCoin1}/\${mainCoin2}の押し目防壁稼働中</span>
           </div>
         </div>
         <div class="pocket-card b">
@@ -645,7 +670,7 @@ const MULTI_COIN_CYBER_HTML = `<!DOCTYPE html>
           <div class="pocket-desc">戦略: 実保有銘柄クジラオンチェーン追従</div>
           <div class="pocket-status">
             <span style="color:#BF5AF2;">●</span>
-            <span>🐋 ご登録資産(\${mainCoin1}/\${mainCoin3})の大口ステーキング集積を追従中</span>
+            <span>🐋 ご登録資産(\${mainCoin1}/\${mainCoin2})の大口ステーキング集積を追従中</span>
           </div>
         </div>
       \`;
@@ -655,7 +680,7 @@ const MULTI_COIN_CYBER_HTML = `<!DOCTYPE html>
         { coin: mainCoin1, type: 'SELL', profitJpy: Math.round(baseVal * 0.0022 + 15), reason: \`実保有\${mainCoin1} 急騰モメンタム検知 AI秒速利確\`, time: 'たった今' },
         { coin: mainCoin2, type: 'SELL', profitJpy: Math.round(baseVal * 0.0015 + 10), reason: \`実保有\${mainCoin2} 送金・板反発により高値利確\`, time: '1分前' },
         { coin: mainCoin3, type: 'BUY', profitJpy: 0, reason: \`実保有\${mainCoin3} オンチェーン追加買いシグナル\`, time: '4分前' },
-        { coin: 'XRP', type: 'SELL', profitJpy: Math.round(baseVal * 0.0011 + 8), reason: '実保有XRP レジスタンスブレイク追従利確', time: '10分前' }
+        { coin: mainCoin1, type: 'SELL', profitJpy: Math.round(baseVal * 0.0011 + 8), reason: \`実保有\${mainCoin1} レジスタンスブレイク追従利確\`, time: '10分前' }
       ];
 
       const filteredTrades = selectedCoin === 'ALL'
@@ -672,7 +697,7 @@ const MULTI_COIN_CYBER_HTML = `<!DOCTYPE html>
       \`).join('');
     }
 
-    // Asset Modal Functions (即時自動保存 & Sticky Footer搭載)
+    // Asset Modal Functions (双方向リアルタイム自動換算)
     function openAssetModal() {
       loadSavedAmounts();
       document.getElementById('assetModal').classList.add('active');
@@ -689,90 +714,184 @@ const MULTI_COIN_CYBER_HTML = `<!DOCTYPE html>
       const container = document.getElementById('assetInputList');
       container.innerHTML = fundData.coins.map(c => {
         const amt = c.amount || 0;
-        const estVal = Math.round(amt * c.price);
+        const estVal = amt > 0 ? Math.round(amt * c.price) : '';
+        const priceFmt = c.price < 1 ? c.price.toFixed(4) : c.price < 100 ? c.price.toFixed(1) : c.price.toLocaleString();
+        
         return \`
-          <div class="asset-row">
-            <div>
-              <span style="color:\${c.color};font-weight:bold;">● \${c.id}</span>
-              <span style="color:#A0B8D4;font-size:11px;margin-left:4px;">\${c.name}</span>
-              <div style="font-size:9px;color:#557090;">(1枚 = ¥\${c.price.toLocaleString()})</div>
-            </div>
-            <div style="text-align:right;">
-              <div class="asset-input-wrap">
-                <input type="number" step="any" min="0" class="asset-input" id="input_amt_\${c.id}" value="\${amt}" oninput="onHoldingInput('\${c.id}')" />
-                <span style="color:#A0B8D4;font-size:11px;">枚</span>
-                <button class="btn-zero-clear" onclick="setCoinAmountToZero('\${c.id}')" title="この銘柄を0枚にする">0クリア</button>
+          <div class="asset-card">
+            <div class="asset-card-hdr">
+              <div class="asset-coin-info">
+                <span class="coin-dot" style="color:\${c.color};">●</span>
+                <span class="coin-sym">\${c.id}</span>
+                <span class="coin-jp">\${c.name}</span>
               </div>
-              <div class="asset-subval" id="val_prev_\${c.id}">\${amt > 0 ? '≈ ¥' + estVal.toLocaleString() : '<span style=\"color:#556A84;\">未所持 (¥0)</span>'}</div>
+              <div class="coin-rate">1\${c.id} = ¥\${priceFmt}</div>
+              <button class="btn-zero-clear" onclick="setCoinAmountToZero('\${c.id}')" title="0にする">0クリア</button>
+            </div>
+            <div class="asset-inputs-grid">
+              <!-- 枚数入力欄 -->
+              <div class="input-field-box">
+                <label class="field-lbl">🪙 枚数で指定</label>
+                <div class="field-wrap">
+                  <input type="number" step="any" min="0" class="num-inp" id="input_amt_\${c.id}" value="\${amt || ''}" oninput="onAmtChange('\${c.id}')" placeholder="0" />
+                  <span class="field-unit">枚</span>
+                </div>
+              </div>
+
+              <div class="input-arrow">⇄</div>
+
+              <!-- 日本円金額入力欄 -->
+              <div class="input-field-box">
+                <label class="field-lbl">💴 日本円で指定</label>
+                <div class="field-wrap">
+                  <input type="number" step="any" min="0" class="num-inp yen" id="input_jpy_\${c.id}" value="\${estVal}" oninput="onJpyChange('\${c.id}')" placeholder="0" />
+                  <span class="field-unit">円</span>
+                </div>
+              </div>
             </div>
           </div>
         \`;
       }).join('');
     }
 
-    // ユーザーが入力を変更するたびに即時自動保存
-    function onHoldingInput(coinId) {
-      previewAssetVal(coinId);
+    // 【枚数】が入力されたとき → 【日本円】を自動計算
+    function onAmtChange(coinId) {
+      const amtInp = document.getElementById('input_amt_' + coinId);
+      const jpyInp = document.getElementById('input_jpy_' + coinId);
+      const c = fundData.coins.find(item => item.id === coinId);
+      if (!amtInp || !jpyInp || !c) return;
+
+      const amt = parseFloat(amtInp.value) || 0;
+      c.amount = amt;
+      c.isOwned = amt > 0;
+
+      if (amt > 0) {
+        const jpy = Math.round(amt * c.price);
+        jpyInp.value = jpy;
+      } else {
+        jpyInp.value = '';
+      }
+
+      updateModalFooterTotal();
+      saveAssetHoldings(false);
+    }
+
+    // 【日本円】が入力されたとき → 【枚数】を自動計算
+    function onJpyChange(coinId) {
+      const amtInp = document.getElementById('input_amt_' + coinId);
+      const jpyInp = document.getElementById('input_jpy_' + coinId);
+      const c = fundData.coins.find(item => item.id === coinId);
+      if (!amtInp || !jpyInp || !c) return;
+
+      const jpy = parseFloat(jpyInp.value) || 0;
+      if (jpy > 0) {
+        let amt = jpy / c.price;
+        // 銘柄の価格帯に応じた適切な小数点桁数にフォーマット
+        if (c.price >= 100000) {
+          amt = parseFloat(amt.toFixed(8)); // BTC, ETHなど
+        } else if (c.price >= 10) {
+          amt = parseFloat(amt.toFixed(4)); // XRP, SOL, DOGEなど
+        } else {
+          amt = Math.round(amt); // SHIBなど超低単価銘柄
+        }
+        c.amount = amt;
+        c.isOwned = true;
+        amtInp.value = amt;
+      } else {
+        c.amount = 0;
+        c.isOwned = false;
+        amtInp.value = '';
+      }
+
       updateModalFooterTotal();
       saveAssetHoldings(false);
     }
 
     function setCoinAmountToZero(coinId) {
-      const inp = document.getElementById('input_amt_' + coinId);
-      if (inp) {
-        inp.value = 0;
-        onHoldingInput(coinId);
+      const amtInp = document.getElementById('input_amt_' + coinId);
+      const jpyInp = document.getElementById('input_jpy_' + coinId);
+      const c = fundData.coins.find(item => item.id === coinId);
+      if (amtInp) amtInp.value = '';
+      if (jpyInp) jpyInp.value = '';
+      if (c) {
+        c.amount = 0;
+        c.isOwned = false;
       }
+      updateModalFooterTotal();
+      saveAssetHoldings(false);
     }
 
-    function resetToOwnerRealAssets() {
+    // ご主人様の実資産プリセット適用
+    function applyOwnerPreset() {
       fundData.coins.forEach(c => {
         const amt = REAL_OWNER_PRESET[c.id] || 0;
         c.amount = amt;
         c.isOwned = amt > 0;
-        const inp = document.getElementById('input_amt_' + c.id);
-        if (inp) inp.value = amt;
-        const prev = document.getElementById('val_prev_' + c.id);
-        if (prev) {
-          const val = Math.round(amt * c.price);
-          prev.innerHTML = amt > 0 ? '≈ ¥' + val.toLocaleString() : '<span style=\"color:#556A84;\">未所持 (¥0)</span>';
-        }
+        const amtInp = document.getElementById('input_amt_' + c.id);
+        const jpyInp = document.getElementById('input_jpy_' + c.id);
+        if (amtInp) amtInp.value = amt > 0 ? amt : '';
+        if (jpyInp) jpyInp.value = amt > 0 ? Math.round(amt * c.price) : '';
       });
       updateModalFooterTotal();
       saveAssetHoldings(false);
-      showToast('🔄 ご主人様の試算（¥16,601）に初期化しました！');
+      showToast('💼 ご主人様の実保有資産（¥16,601）を反映しました！');
+    }
+
+    // デモ用資金一括配分プリセット（例: 10万円デモ運用）
+    function applyDemoPreset(totalDemoBudget) {
+      // トップ銘柄にバランスよく自動配分 (BTC 40%, ETH 30%, SOL 15%, DOGE 10%, XRP 5%)
+      const allocMap = {
+        BTC: 0.40,
+        ETH: 0.30,
+        SOL: 0.15,
+        DOGE: 0.10,
+        XRP: 0.05
+      };
+
+      fundData.coins.forEach(c => {
+        const ratio = allocMap[c.id] || 0;
+        const jpy = Math.round(totalDemoBudget * ratio);
+        let amt = 0;
+        if (jpy > 0) {
+          amt = jpy / c.price;
+          if (c.price >= 100000) amt = parseFloat(amt.toFixed(8));
+          else if (c.price >= 10) amt = parseFloat(amt.toFixed(4));
+          else amt = Math.round(amt);
+        }
+        c.amount = amt;
+        c.isOwned = amt > 0;
+
+        const amtInp = document.getElementById('input_amt_' + c.id);
+        const jpyInp = document.getElementById('input_jpy_' + c.id);
+        if (amtInp) amtInp.value = amt > 0 ? amt : '';
+        if (jpyInp) jpyInp.value = jpy > 0 ? jpy : '';
+      });
+
+      updateModalFooterTotal();
+      saveAssetHoldings(false);
+      showToast('🚀 ¥' + totalDemoBudget.toLocaleString() + ' デモ運用ポートフォリオを設定しました！');
     }
 
     function clearAllHoldingsToZero() {
-      if (confirm('すべての銘柄の所持数を「0枚（未所持）」にリセットしますか？\\n※ リセット後、お持ちのコインだけ数値を入力できます。')) {
+      if (confirm('すべての銘柄の所持数を「0枚（未所持）」にリセットしますか？')) {
         fundData.coins.forEach(c => {
-          const inp = document.getElementById('input_amt_' + c.id);
-          if (inp) inp.value = 0;
-          const prev = document.getElementById('val_prev_' + c.id);
-          if (prev) prev.innerHTML = '<span style=\"color:#556A84;\">未所持 (¥0)</span>';
+          c.amount = 0;
+          c.isOwned = false;
+          const amtInp = document.getElementById('input_amt_' + c.id);
+          const jpyInp = document.getElementById('input_jpy_' + c.id);
+          if (amtInp) amtInp.value = '';
+          if (jpyInp) jpyInp.value = '';
         });
         updateModalFooterTotal();
         saveAssetHoldings(false);
-      }
-    }
-
-    function previewAssetVal(coinId) {
-      const inp = document.getElementById('input_amt_' + coinId);
-      const prev = document.getElementById('val_prev_' + coinId);
-      const c = fundData.coins.find(item => item.id === coinId);
-      if (inp && prev && c) {
-        const amt = parseFloat(inp.value) || 0;
-        const val = Math.round(amt * c.price);
-        prev.innerHTML = amt > 0 ? '≈ ¥' + val.toLocaleString() : '<span style=\"color:#556A84;\">未所持 (¥0)</span>';
+        showToast('🧹 全銘柄を0枚にリセットしました');
       }
     }
 
     function updateModalFooterTotal() {
       let sum = 0;
       fundData.coins.forEach(c => {
-        const inp = document.getElementById('input_amt_' + c.id);
-        const amt = inp ? (parseFloat(inp.value) || 0) : (c.amount || 0);
-        sum += Math.round(amt * c.price);
+        sum += Math.round((c.amount || 0) * c.price);
       });
       const ftrElem = document.getElementById('modalFooterTotalVal');
       if (ftrElem) {
@@ -783,23 +902,17 @@ const MULTI_COIN_CYBER_HTML = `<!DOCTYPE html>
     function saveAssetHoldings(showToastAlert = true) {
       const holdingsMap = {};
       fundData.coins.forEach(c => {
-        const inp = document.getElementById('input_amt_' + c.id);
-        if (inp) {
-          const val = parseFloat(inp.value) || 0;
-          c.amount = val;
-          c.isOwned = val > 0;
-          holdingsMap[c.id] = val;
-        }
+        holdingsMap[c.id] = c.amount || 0;
       });
       try {
         localStorage.setItem('rakushite_my_holdings', JSON.stringify(holdingsMap));
-        localStorage.setItem('rakushite_preset_v4', 'true');
+        localStorage.setItem('rakushite_preset_v5', 'true');
       } catch (e) {}
 
       renderDashboard();
 
       if (showToastAlert) {
-        showToast('✅ ご主人様の保有資産を保存・反映いたしました！');
+        showToast('✅ ご主人様の資産設定を保存・反映いたしました！');
       }
     }
 
@@ -859,11 +972,11 @@ const MULTI_COIN_CYBER_HTML = `<!DOCTYPE html>
     function quickAsk(type) {
       let reply = '';
       if (type === 'recent5min') {
-        reply = 'ご主人様、直近5分間はご登録いただいた4銘柄（DOGE/ETH/SHIB/XRP）のボラティリティをAIデイトレが掴み、利ざやを掠め取りました！';
+        reply = 'ご主人様、直近5分間はご登録いただいたポートフォリオのボラティリティをAIデイトレが掴み、利ざやを掠め取りました！';
       } else if (type === 'todayTotal') {
-        reply = 'ご主人様、実保有資産（約¥16,601）ベースでの本日運用益は順調にプラス推移しております！';
+        reply = 'ご主人様、現在のポートフォリオ評価額ベースでの本日運用益は順調にプラス推移しております！';
       } else {
-        reply = 'ご主人様、現在のアルト相場はご主人様のポートフォリオ（DOGE/ETH/SHIB/XRP）にとって良好なモメンタムを維持しております！';
+        reply = 'ご主人様、現在の仮想通貨市場はご主人様のポートフォリオにとって良好なモメンタムを維持しております！';
       }
       chatHistory.push({ sender: 'butler', text: reply });
       openChat();
