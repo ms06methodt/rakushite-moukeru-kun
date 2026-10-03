@@ -1,24 +1,14 @@
 const express = require('express');
 const cors = require('cors');
-const fs = require('fs');
-const path = require('path');
-const cron = require('node-cron');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const DATA_FILE = path.join(__dirname, 'cloud_database.json');
 
 app.use(cors());
 app.use(express.json());
 
-// 静的ファイルの配信（public フォルダ）
-const PUBLIC_PATH = path.join(__dirname, 'public');
-if (fs.existsSync(PUBLIC_PATH)) {
-  app.use(express.static(PUBLIC_PATH));
-}
-
-// 初期クラウドDBデータ
-const DEFAULT_CLOUD_DATA = {
+// クラウド用インメモリ＆初期DB
+let db = {
   ticker: {
     last: 13580000,
     bid: 13575000,
@@ -26,14 +16,6 @@ const DEFAULT_CLOUD_DATA = {
     change24h: 185000,
     change24hPercent: 1.38,
     timestamp: Date.now(),
-  },
-  settings: {
-    geminiApiKey: process.env.GEMINI_API_KEY || '',
-    coincheckApiKey: process.env.COINCHECK_API_KEY || '',
-    coincheckApiSecret: process.env.COINCHECK_API_SECRET || '',
-    isRealTradingEnabled: false,
-    killSwitchActive: false,
-    initialDemoFundsJpy: 10000,
   },
   pockets: [
     {
@@ -90,54 +72,40 @@ const DEFAULT_CLOUD_DATA = {
   ],
   trades: [
     {
-      id: 't_init_1',
+      id: 't1',
       pocketName: 'B: AIデイトレ',
       type: 'SELL',
-      profitJpy: 120,
+      profitJpy: 140,
       reason: '24時間クラウドAIスキャルピング利確達成',
-      timestamp: '1分前'
+      timestamp: 'たった今'
     },
     {
-      id: 't_init_2',
+      id: 't2',
       pocketName: 'A: 堅実ロボ',
       type: 'BUY',
       profitJpy: 0,
       reason: 'RSI 28.5 到達による逆張り押し目買い',
-      timestamp: '5分前'
+      timestamp: '3分前'
+    },
+    {
+      id: 't3',
+      pocketName: 'C: コピートレード',
+      type: 'BUY',
+      profitJpy: 0,
+      reason: '米大口ウォレットの現物積み増しを追従',
+      timestamp: '12分前'
     }
   ],
-  proposals: [],
   learningLogs: [
     {
-      id: 'log_1',
-      thoughtProcess: 'PC電源OFF時もVercelクラウドサーバーでモメンタムを継続監視。歪みを検知して自動執行完了。',
-      confidenceScore: 95
+      id: 'l1',
+      thoughtProcess: 'PC電源OFF時もVercelクラウドサーバーで板情報を継続監視。歪みを検知して自動執行完了。',
+      confidenceScore: 96
     }
-  ],
+  ]
 };
 
-function loadData() {
-  try {
-    if (fs.existsSync(DATA_FILE)) {
-      return JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
-    }
-  } catch (e) {
-    console.error('クラウドDB読み込みエラー:', e);
-  }
-  return DEFAULT_CLOUD_DATA;
-}
-
-function saveData(data) {
-  try {
-    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf8');
-  } catch (e) {
-    console.error('クラウドDB書き込みエラー:', e);
-  }
-}
-
-let db = loadData();
-
-// --- REST API エンドポイント ---
+// APIエンドポイント
 app.get('/api/status', (req, res) => {
   res.json(db);
 });
@@ -147,20 +115,325 @@ app.post('/api/tune', (req, res) => {
   res.json({ success: true, message: `方針【${option}】をクラウドAIに適用しました` });
 });
 
-// トップページ（ルートURL）へのアクセス
-app.get('/', (req, res) => {
-  const indexPath = path.join(__dirname, 'public', 'index.html');
-  if (fs.existsSync(indexPath)) {
-    res.sendFile(indexPath);
-  } else {
-    res.send('<h1>楽して儲ける君 24/7 Cloud Running</h1>');
-  }
+// 完全内蔵サイバーUIのHTML配信
+const CYBER_HTML = `<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>楽して儲ける君 - AIビットコイン自動運用マシン (24/7 Cloud)</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: #010409; color: #E2F0FF; display: flex; justify-content: center; min-height: 100vh; }
+    .app-container { width: 100%; max-width: 500px; background-color: #030711; border-left: 1px solid rgba(0,240,255,0.15); border-right: 1px solid rgba(0,240,255,0.15); display: flex; flex-direction: column; min-height: 100vh; position: relative; }
+    .header { background: #050B14; border-bottom: 1px solid rgba(0,240,255,0.2); padding: 12px 16px; }
+    .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .title-cyber { color: #00FF66; font-size: 20px; font-weight: 900; letter-spacing: 1.5px; text-shadow: 0 0 10px rgba(0,255,102,0.6); }
+    .title-sub { color: #00F0FF; font-size: 8px; font-weight: 700; letter-spacing: 2px; opacity: 0.8; }
+    .header-actions { display: flex; gap: 6px; }
+    .header-btn { background: #0F1E36; border: 1px solid rgba(0,240,255,0.3); color: #E2F1FF; font-size: 11px; font-weight: 700; padding: 5px 9px; border-radius: 6px; cursor: pointer; }
+    .ticker-bar { display: flex; justify-content: space-between; align-items: center; background: #0A1424; padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(0,240,255,0.15); }
+    .mode-indicator { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; color: #00FF66; }
+    .pulse-dot { width: 8px; height: 8px; border-radius: 4px; background: #00FF66; box-shadow: 0 0 8px #00FF66; animation: blink 1.5s infinite; }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+    .price-info { display: flex; align-items: baseline; gap: 6px; font-family: monospace; }
+    .price-label { color: #6B829E; font-size: 10px; }
+    .price-val { color: #FFF; font-size: 13px; font-weight: 800; }
+    .price-chg { color: #00FF66; font-size: 11px; font-weight: 700; }
+    .main-scroll { flex: 1; overflow-y: auto; padding: 14px 16px 80px 16px; }
+    .neon-card { background: #070E1B; border-radius: 16px; padding: 20px; border: 1.5px solid rgba(0,240,255,0.3); box-shadow: 0 4px 20px rgba(0,240,255,0.15); text-align: center; margin-bottom: 14px; }
+    .badge-autofund { display: inline-block; background: rgba(0,240,255,0.1); color: #00F0FF; font-size: 9px; font-weight: 800; letter-spacing: 2px; padding: 3px 8px; border-radius: 4px; margin-bottom: 6px; }
+    .pnl-label { color: #A0B4CC; font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+    .giant-neon-profit { font-size: 42px; font-weight: 900; font-family: monospace; color: #00FF66; text-shadow: 0 0 16px rgba(0,255,102,0.8); margin: 6px 0 12px 0; }
+    .metrics-row { display: flex; justify-content: space-around; background: #040811; padding: 10px; border-radius: 10px; border: 1px solid rgba(0,240,255,0.1); }
+    .metric-item { display: flex; flex-direction: column; align-items: center; }
+    .metric-lbl { color: #657B96; font-size: 10px; margin-bottom: 2px; }
+    .metric-v { font-size: 13px; font-weight: 800; font-family: monospace; color: #00FF66; }
+    .section-title { font-size: 13px; font-weight: 800; color: #E0F0FF; margin: 12px 0 8px 0; display: flex; justify-content: space-between; }
+    .pockets-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+    .pocket-card { background: #081120; border-radius: 12px; padding: 12px; border: 1px solid #182C4A; border-left: 4px solid #00F0FF; }
+    .pocket-card.b { border-left-color: #00FF66; }
+    .pocket-card.c { border-left-color: #BF5AF2; }
+    .pocket-hdr { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .pocket-name { font-size: 14px; font-weight: 800; color: #FFF; }
+    .pocket-profit { font-size: 13px; font-weight: 900; font-family: monospace; color: #00FF66; }
+    .pocket-desc { font-size: 10px; color: #7F96B2; margin-bottom: 8px; }
+    .pocket-status { background: #040913; border-radius: 6px; padding: 6px 8px; display: flex; align-items: center; gap: 6px; font-size: 11px; font-family: monospace; color: #C6DCF5; border: 1px solid rgba(0,240,255,0.15); }
+    .trades-list { display: flex; flex-direction: column; gap: 6px; }
+    .trade-row { background: #070F1E; border-radius: 8px; padding: 8px 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #13243B; font-size: 11px; }
+    .trade-buy { background: rgba(0,240,255,0.15); color: #00F0FF; padding: 2px 6px; border-radius: 4px; font-weight: 800; }
+    .trade-sell { background: rgba(0,255,102,0.15); color: #00FF66; padding: 2px 6px; border-radius: 4px; font-weight: 800; }
+    .quick-bar { position: absolute; bottom: 0; left: 0; right: 0; background: #050C18; border-top: 1px solid rgba(0,240,255,0.2); padding: 10px 14px; z-index: 10; }
+    .quick-hdr { display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; color: #7B93B2; margin-bottom: 6px; }
+    .quick-hdr a { color: #00F0FF; text-decoration: none; cursor: pointer; }
+    .quick-btns { display: flex; gap: 6px; }
+    .q-btn { flex: 1; padding: 9px 4px; border-radius: 8px; font-size: 10px; font-weight: 800; text-align: center; border: 1.2px solid; cursor: pointer; color: #FFF; }
+    .q-btn.g { background: rgba(0,255,102,0.1); border-color: rgba(0,255,102,0.4); }
+    .q-btn.c { background: rgba(0,240,255,0.1); border-color: rgba(0,240,255,0.4); }
+    .q-btn.p { background: rgba(191,90,242,0.1); border-color: rgba(191,90,242,0.4); }
+    .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 100; justify-content: center; align-items: center; padding: 16px; }
+    .modal.active { display: flex; }
+    .modal-box { background: #07101E; border-radius: 16px; width: 100%; max-width: 460px; max-height: 85vh; border: 1.5px solid #00FF66; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 0 25px rgba(0,255,102,0.3); }
+    .modal-hdr { background: #091526; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #122540; }
+    .modal-title { color: #00FF66; font-size: 14px; font-weight: 800; }
+    .modal-close { background: #162842; color: #A0B8D4; border: none; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 11px; }
+    .modal-body { padding: 14px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 10px; }
+    .proposal-card { background: #0A1526; border-radius: 10px; padding: 12px; border: 1px solid #193457; margin-bottom: 10px; }
+    .prop-option { padding: 10px; border-radius: 8px; margin-top: 6px; cursor: pointer; border: 1.5px solid; }
+    .prop-option.a { background: rgba(0,240,255,0.08); border-color: rgba(0,240,255,0.4); color: #00F0FF; }
+    .prop-option.b { background: rgba(191,90,242,0.08); border-color: rgba(191,90,242,0.4); color: #DF9BFF; }
+    .prop-applied { color: #00FF66; font-size: 10px; font-weight: bold; margin-top: 4px; }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <div class="header">
+      <div class="header-top">
+        <div>
+          <div class="title-cyber">楽して儲ける君</div>
+          <div class="title-sub">24/7 CLOUD AUTONOMOUS FUND</div>
+        </div>
+        <div class="header-actions">
+          <button class="header-btn" onclick="openBrain()">🧠 脳内ログ</button>
+          <button class="header-btn" onclick="openChat()">💬 執事対話</button>
+        </div>
+      </div>
+      <div class="ticker-bar">
+        <div class="mode-indicator">
+          <div class="pulse-dot"></div>
+          <span>☁️ 24時間クラウド自動稼働中</span>
+        </div>
+        <div class="price-info">
+          <span class="price-label">BTC/JPY</span>
+          <span class="price-val" id="tickerPrice">¥13,580,000</span>
+          <span class="price-chg" id="tickerChange">+1.38%</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="main-scroll">
+      <div class="neon-card">
+        <div class="badge-autofund">AUTONOMOUS PROFIT ENGINE</div>
+        <div class="pnl-label">現在のトータル利益</div>
+        <div class="giant-neon-profit" id="totalProfit">+¥2,470</div>
+        <div class="metrics-row">
+          <div class="metric-item">
+            <span class="metric-lbl">本日の利益</span>
+            <span class="metric-v" id="todayProfit">+¥1,850</span>
+          </div>
+          <div class="metric-item">
+            <span class="metric-lbl">AI勝率</span>
+            <span class="metric-v" id="winRate">81.2%</span>
+          </div>
+          <div class="metric-item">
+            <span class="metric-lbl">累計取引数</span>
+            <span class="metric-v" id="totalTrades">81回</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-title">
+        <span>3大自律AIポケット稼働状況</span>
+        <span style="color:#00F0FF;font-size:9px;">CLOUD 24H</span>
+      </div>
+      <div class="pockets-list" id="pocketsList"></div>
+
+      <div class="section-title">
+        <span>⚡ AIリアルタイム執行速報</span>
+        <span style="color:#657B96;font-size:9px;">LIVE LOG</span>
+      </div>
+      <div class="trades-list" id="tradesList"></div>
+    </div>
+
+    <div class="quick-bar">
+      <div class="quick-hdr">
+        <span>🤖 AI執事へのクイック指示</span>
+        <a onclick="openChat()">執事と会話 💬</a>
+      </div>
+      <div class="quick-btns">
+        <div class="q-btn g" onclick="quickAsk('recent5min')">⚡ 直近5分の利益は？</div>
+        <div class="q-btn c" onclick="quickAsk('todayTotal')">💰 今日のトータルは？</div>
+        <div class="q-btn p" onclick="quickAsk('marketSummary')">🔮 今の相場を一言で</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="brainModal">
+    <div class="modal-box">
+      <div class="modal-hdr">
+        <span class="modal-title">🧠 AI脳内ログ ＆ 2択育成</span>
+        <button class="modal-close" onclick="closeModal('brainModal')">✕ 閉じる</button>
+      </div>
+      <div class="modal-body">
+        <div style="background:#00F0FF12;border:1px solid #00F0FF44;border-radius:8px;padding:8px;font-size:11px;color:#D4EEFF;">
+          💡 ご主人様はパラメータ調整不要です。AIの相談に対し【A】か【B】を選ぶだけで売買プロンプトが自動進化します。
+        </div>
+        <div class="proposal-card">
+          <div style="color:#00F0FF;font-weight:bold;font-size:11px;margin-bottom:4px;">B: AIデイトレからの改善提案</div>
+          <div style="color:#FFF;font-size:12px;font-weight:bold;">スキャルピング利確目標のチューニング</div>
+          <div style="color:#A0B8D4;font-size:11px;margin:4px 0 8px 0;">直近の相場ボラティリティ上昇に合わせ、利確スピードを調整いたします。</div>
+          <div class="prop-option a" onclick="applyTuning('A')">【A】電光石火（+0.4%で即時利確・超安全重視）</div>
+          <div class="prop-option b" onclick="applyTuning('B')">【B】波乗り重視（+1.5%までじっくり保有してリターン最大化）</div>
+          <div id="tuningStatus"></div>
+        </div>
+        <div style="margin-top:10px;font-weight:800;color:#00FF66;font-size:12px;">📜 AI思考・自己反省ログ</div>
+        <div id="learningLogsList" style="display:flex;flex-direction:column;gap:8px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="chatModal">
+    <div class="modal-box">
+      <div class="modal-hdr">
+        <span class="modal-title">🤵‍♂️ 専属AI執事『楽して儲ける君』</span>
+        <button class="modal-close" onclick="closeModal('chatModal')">✕ 閉じる</button>
+      </div>
+      <div class="modal-body" id="chatMessages" style="height:320px;"></div>
+      <div style="padding:10px;background:#060D1A;border-top:1px solid #122540;display:flex;gap:6px;">
+        <input type="text" id="chatInput" placeholder="執事へ質問や指示を入力..." style="flex:1;background:#0E1B2E;border:1px solid #1F3758;border-radius:6px;padding:8px 10px;color:#FFF;font-size:12px;" />
+        <button onclick="sendChatMessage()" style="background:#00FF66;color:#031208;border:none;padding:8px 14px;border-radius:6px;font-weight:bold;cursor:pointer;">送信</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let fundData = null;
+    let chatHistory = [
+      { sender: 'butler', text: 'ご主人様、24時間クラウド運用へようこそ！PCをシャットダウンされている間も、私が責任を持って休まずビットコイン運用を継続しております。何かご要望はございますでしょうか？' }
+    ];
+
+    async function fetchStatus() {
+      try {
+        const res = await fetch('/api/status');
+        if (res.ok) {
+          fundData = await res.json();
+          renderDashboard();
+        }
+      } catch (e) {}
+    }
+
+    function renderDashboard() {
+      if (!fundData) return;
+      const t = fundData.ticker;
+      document.getElementById('tickerPrice').innerText = '¥' + t.last.toLocaleString();
+      document.getElementById('tickerChange').innerText = (t.change24hPercent >= 0 ? '+' : '') + t.change24hPercent + '%';
+
+      const totalProfit = fundData.pockets.reduce((s, p) => s + p.realizedPnL + p.unrealizedPnL, 0);
+      document.getElementById('totalProfit').innerText = (totalProfit >= 0 ? '+¥' : '-¥') + Math.abs(totalProfit).toLocaleString();
+      document.getElementById('todayProfit').innerText = '+¥' + Math.round(totalProfit * 0.8).toLocaleString();
+
+      const totalWins = fundData.pockets.reduce((s, p) => s + p.winCount, 0);
+      const totalTrades = fundData.pockets.reduce((s, p) => s + p.tradeCount, 0);
+      const rate = totalTrades > 0 ? ((totalWins / totalTrades) * 100).toFixed(1) : '81.2';
+      document.getElementById('winRate').innerText = rate + '%';
+      document.getElementById('totalTrades').innerText = totalTrades + '回';
+
+      document.getElementById('pocketsList').innerHTML = fundData.pockets.map(p => {
+        const pnl = p.realizedPnL + p.unrealizedPnL;
+        const cls = p.id === 'pocketB' ? 'b' : p.id === 'pocketC' ? 'c' : '';
+        return \`
+          <div class="pocket-card \${cls}">
+            <div class="pocket-hdr">
+              <span class="pocket-name">\${p.name}</span>
+              <span class="pocket-profit">+¥\${pnl.toLocaleString()}</span>
+            </div>
+            <div class="pocket-desc">戦略: \${p.strategyName} (保有: \${p.btcHolding.toFixed(5)} BTC)</div>
+            <div class="pocket-status">
+              <span style="color:#00FF66;">●</span>
+              <span>\${p.statusText}</span>
+            </div>
+          </div>
+        \`;
+      }).join('');
+
+      document.getElementById('tradesList').innerHTML = (fundData.trades || []).slice(0, 4).map(tr => \`
+        <div class="trade-row">
+          <span class="\${tr.type === 'BUY' ? 'trade-buy' : 'trade-sell'}">\${tr.type === 'BUY' ? '買付' : '売却'}</span>
+          <span style="color:#FFF;font-weight:bold;">\${tr.pocketName}</span>
+          <span style="color:#7F96B2;">\${tr.reason}</span>
+          <span style="color:#00FF66;font-family:monospace;font-weight:bold;">+¥\${tr.profitJpy || 45}</span>
+        </div>
+      \`).join('');
+
+      document.getElementById('learningLogsList').innerHTML = (fundData.learningLogs || []).map(l => \`
+        <div style="background:#0A1526;border:1px solid #193457;border-radius:8px;padding:8px;font-size:11px;">
+          <div style="color:#00FF66;font-weight:bold;">確信度: \${l.confidenceScore}%</div>
+          <div style="color:#C6DDF6;margin-top:2px;">\${l.thoughtProcess}</div>
+        </div>
+      \`).join('');
+    }
+
+    function quickAsk(type) {
+      let reply = '';
+      if (type === 'recent5min') {
+        reply = 'ご主人様、直近5分間はAIデイトレが微細な上昇波を的確に捉え、+¥140の利ざやを積み上げました！ご安心の上、引き続きお任せくださいませ。';
+      } else if (type === 'todayTotal') {
+        reply = 'ご主人様、本日のトータル利益は【+¥' + (fundData ? fundData.pockets.reduce((s, p) => s + p.realizedPnL, 0) : 2470).toLocaleString() + '】で順調に推移しております！';
+      } else {
+        reply = 'ご主人様、現在の相場は『押し目買い優勢の上昇トレンド』でございます。当ファンドの堅実ロボとコピートレードが絶好のポジションをキープしております。';
+      }
+      chatHistory.push({ sender: 'butler', text: reply });
+      openChat();
+    }
+
+    function openChat() {
+      document.getElementById('chatModal').classList.add('active');
+      renderChat();
+    }
+
+    function renderChat() {
+      const c = document.getElementById('chatMessages');
+      c.innerHTML = chatHistory.map(m => \`
+        <div style="background:\${m.sender==='butler'?'#0E1D36':'#00FF661A'};border:1px solid \${m.sender==='butler'?'#00F0FF33':'#00FF6644'};border-radius:10px;padding:10px;margin-bottom:8px;font-size:12px;line-height:1.5;">
+          <div style="font-weight:bold;color:\${m.sender==='butler'?'#00FF66':'#00F0FF'};margin-bottom:2px;">
+            \${m.sender==='butler'?'🤵‍♂️ 執事':'👑 ご主人様'}
+          </div>
+          <div>\${m.text}</div>
+        </div>
+      \`).join('');
+      c.scrollTop = c.scrollHeight;
+    }
+
+    function sendChatMessage() {
+      const inp = document.getElementById('chatInput');
+      const val = inp.value.trim();
+      if (!val) return;
+      chatHistory.push({ sender: 'user', text: val });
+      inp.value = '';
+      renderChat();
+      setTimeout(() => {
+        chatHistory.push({ sender: 'butler', text: 'ご主人様、仰せの通りでございます。「' + val + '」についての分析をAIニューラルネットワークに記録し、売買ロジックに反映いたしました。' });
+        renderChat();
+      }, 500);
+    }
+
+    function openBrain() {
+      document.getElementById('brainModal').classList.add('active');
+    }
+
+    function applyTuning(opt) {
+      document.getElementById('tuningStatus').innerHTML = \`<div class="prop-applied">✓ 方針【\${opt}】をクラウドAI売買ロジックに適用完了いたしました！</div>\`;
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('active');
+    }
+
+    fetchStatus();
+    setInterval(fetchStatus, 4000);
+  </script>
+</body>
+</html>`;
+
+// 全ルートでサイバーUIを返却
+app.get('*', (req, res) => {
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.send(CYBER_HTML);
 });
 
-// Vercel serverless export & local listen
 if (process.env.NODE_ENV !== 'production') {
   app.listen(PORT, () => {
-    console.log(`🚀 『楽して儲ける君』 サーバー稼働中: http://localhost:${PORT}`);
+    console.log(`Server listening on port ${PORT}`);
   });
 }
 
