@@ -7,11 +7,11 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// Coincheck 全取扱銘柄マスターデータ
+// Coincheck 全取扱銘柄マスターデータ（視認性の高いサイバーカラー配色）
 const COIN_MASTER = [
   { id: 'BTC', name: 'ビットコイン', symbol: 'BTC/JPY', price: 13580000, change: 1.38, color: '#F7931A' },
   { id: 'ETH', name: 'イーサリアム', symbol: 'ETH/JPY', price: 412000, change: 2.15, color: '#627EEA' },
-  { id: 'XRP', name: 'リップル', symbol: 'XRP/JPY', price: 92.4, change: 4.82, color: '#23292F' },
+  { id: 'XRP', name: 'リップル', symbol: 'XRP/JPY', price: 92.4, change: 4.82, color: '#00AAE4' },
   { id: 'SOL', name: 'ソラナ', symbol: 'SOL/JPY', price: 23800, change: 3.40, color: '#14F195' },
   { id: 'DOGE', name: 'ドージコイン', symbol: 'DOGE/JPY', price: 24.8, change: 6.20, color: '#C2A633' },
   { id: 'SHIB', name: 'シバイヌ', symbol: 'SHIB/JPY', price: 0.0031, change: -1.20, color: '#FFA409' },
@@ -24,7 +24,7 @@ const COIN_MASTER = [
   { id: 'CHZ', name: 'チリーズ', symbol: 'CHZ/JPY', price: 11.2, change: 3.10, color: '#CD0124' },
   { id: 'XLM', name: 'ステラルーメン', symbol: 'XLM/JPY', price: 16.4, change: 0.95, color: '#14B6EB' },
   { id: 'ETC', name: 'イーサリアムクラシック', symbol: 'ETC/JPY', price: 3280, change: 1.40, color: '#328332' },
-  { id: 'IOST', name: 'アイオーエスティ', symbol: 'IOST/JPY', price: 0.98, change: 5.40, color: '#1C1C1C' }
+  { id: 'IOST', name: 'アイオーエスティ', symbol: 'IOST/JPY', price: 0.98, change: 5.40, color: '#A0AEC0' }
 ];
 
 let db = {
@@ -190,7 +190,7 @@ const MULTI_COIN_CYBER_HTML = `<!DOCTYPE html>
     .asset-card-hdr { display: flex; justify-content: space-between; align-items: center; }
     .asset-coin-info { display: flex; align-items: center; gap: 6px; }
     .coin-dot { font-size: 14px; }
-    .coin-sym { font-size: 12px; font-weight: 900; color: #FFF; }
+    .coin-sym { font-size: 12px; font-weight: 900; }
     .coin-jp { font-size: 11px; color: #A0B8D4; }
     .coin-rate { font-size: 9px; color: #5E7C9E; font-family: monospace; }
     .btn-zero-clear { background: #2A1220; border: 1px solid #882244; color: #FF7799; font-size: 10px; font-weight: bold; padding: 3px 8px; border-radius: 4px; cursor: pointer; }
@@ -478,12 +478,12 @@ const MULTI_COIN_CYBER_HTML = `<!DOCTYPE html>
       try {
         const savedReal = localStorage.getItem('rakushite_real_holdings');
         const savedDemo = localStorage.getItem('rakushite_demo_holdings');
-        const isV6 = localStorage.getItem('rakushite_v6_init');
+        const isV7 = localStorage.getItem('rakushite_v7_color');
 
-        if (!savedReal || !isV6) {
+        if (!savedReal || !isV7) {
           localStorage.setItem('rakushite_real_holdings', JSON.stringify(REAL_OWNER_PRESET));
           localStorage.setItem('rakushite_demo_holdings', JSON.stringify(DEMO_10K_PRESET));
-          localStorage.setItem('rakushite_v6_init', 'true');
+          localStorage.setItem('rakushite_v7_color', 'true');
           realHoldings = { ...REAL_OWNER_PRESET };
           demoHoldings = { ...DEMO_10K_PRESET };
         } else {
@@ -530,6 +530,7 @@ const MULTI_COIN_CYBER_HTML = `<!DOCTYPE html>
               if (local) {
                 local.price = c.price;
                 local.change = c.change;
+                local.color = c.color;
               }
             });
           }
@@ -838,7 +839,7 @@ const MULTI_COIN_CYBER_HTML = `<!DOCTYPE html>
             <div class="asset-card-hdr">
               <div class="asset-coin-info">
                 <span class="coin-dot" style="color:\${c.color};">●</span>
-                <span class="coin-sym">\${c.id}</span>
+                <span class="coin-sym" style="color:\${c.color};">\${c.id}</span>
                 <span class="coin-jp">\${c.name}</span>
               </div>
               <div class="coin-rate">1\${c.id} = ¥\${priceFmt}</div>
