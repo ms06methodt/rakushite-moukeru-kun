@@ -7,32 +7,28 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// Coincheck 全取扱主要銘柄マスター
+// Coincheck 全取扱銘柄マスターデータ（保有量 holdingAmountJpy & 保有フラグ isOwned 付き）
 const COIN_MASTER = [
-  { id: 'BTC', name: 'ビットコイン', symbol: 'BTC/JPY', price: 13580000, change: 1.38, alloc: 40, color: '#F7931A' },
-  { id: 'ETH', name: 'イーサリアム', symbol: 'ETH/JPY', price: 412000, change: 2.15, alloc: 25, color: '#627EEA' },
-  { id: 'XRP', name: 'リップル', symbol: 'XRP/JPY', price: 92.4, change: 4.82, alloc: 15, color: '#23292F' },
-  { id: 'SOL', name: 'ソラナ', symbol: 'SOL/JPY', price: 23800, change: 3.40, alloc: 10, color: '#14F195' },
-  { id: 'DOGE', name: 'ドージコイン', symbol: 'DOGE/JPY', price: 24.8, change: 6.20, alloc: 5, color: '#C2A633' },
-  { id: 'SHIB', name: 'シバイヌ', symbol: 'SHIB/JPY', price: 0.0031, change: -1.20, alloc: 2, color: '#FFA409' },
-  { id: 'AVAX', name: 'アバランチ', symbol: 'AVAX/JPY', price: 4680, change: 1.85, alloc: 1, color: '#E84142' },
-  { id: 'LINK', name: 'チェーンリンク', symbol: 'LINK/JPY', price: 2150, change: 2.90, alloc: 1, color: '#375BD2' },
-  { id: 'MATIC', name: 'ポリゴン', symbol: 'POL/JPY', price: 78.5, change: 0.85, alloc: 1, color: '#8247E5' },
-  { id: 'BCH', name: 'ビットコインキャッシュ', symbol: 'BCH/JPY', price: 54200, change: 1.10, alloc: 0, color: '#0AC18E' },
-  { id: 'LTC', name: 'ライトコイン', symbol: 'LTC/JPY', price: 10400, change: 0.65, alloc: 0, color: '#345D9D' },
-  { id: 'SAND', name: 'サンドボックス', symbol: 'SAND/JPY', price: 48.2, change: -0.45, alloc: 0, color: '#0084FF' },
-  { id: 'CHZ', name: 'チリーズ', symbol: 'CHZ/JPY', price: 11.2, change: 3.10, alloc: 0, color: '#CD0124' },
-  { id: 'XLM', name: 'ステラルーメン', symbol: 'XLM/JPY', price: 16.4, change: 0.95, alloc: 0, color: '#14B6EB' },
-  { id: 'ETC', name: 'イーサリアムクラシック', symbol: 'ETC/JPY', price: 3280, change: 1.40, alloc: 0, color: '#328332' },
-  { id: 'IOST', name: 'アイオーエスティ', symbol: 'IOST/JPY', price: 0.98, change: 5.40, alloc: 0, color: '#1C1C1C' }
+  { id: 'BTC', name: 'ビットコイン', symbol: 'BTC/JPY', price: 13580000, change: 1.38, alloc: 40, isOwned: true, holdingVal: 41078, color: '#F7931A' },
+  { id: 'ETH', name: 'イーサリアム', symbol: 'ETH/JPY', price: 412000, change: 2.15, alloc: 25, isOwned: true, holdingVal: 25674, color: '#627EEA' },
+  { id: 'XRP', name: 'リップル', symbol: 'XRP/JPY', price: 92.4, change: 4.82, alloc: 15, isOwned: true, holdingVal: 15404, color: '#23292F' },
+  { id: 'SOL', name: 'ソラナ', symbol: 'SOL/JPY', price: 23800, change: 3.40, alloc: 10, isOwned: true, holdingVal: 10269, color: '#14F195' },
+  { id: 'DOGE', name: 'ドージコイン', symbol: 'DOGE/JPY', price: 24.8, change: 6.20, alloc: 5, isOwned: true, holdingVal: 5134, color: '#C2A633' },
+  { id: 'SHIB', name: 'シバイヌ', symbol: 'SHIB/JPY', price: 0.0031, change: -1.20, alloc: 2, isOwned: true, holdingVal: 2053, color: '#FFA409' },
+  { id: 'AVAX', name: 'アバランチ', symbol: 'AVAX/JPY', price: 4680, change: 1.85, alloc: 1, isOwned: true, holdingVal: 1026, color: '#E84142' },
+  { id: 'LINK', name: 'チェーンリンク', symbol: 'LINK/JPY', price: 2150, change: 2.90, alloc: 1, isOwned: true, holdingVal: 1026, color: '#375BD2' },
+  { id: 'MATIC', name: 'ポリゴン', symbol: 'POL/JPY', price: 78.5, change: 0.85, alloc: 1, isOwned: true, holdingVal: 1026, color: '#8247E5' },
+  { id: 'BCH', name: 'ビットコインキャッシュ', symbol: 'BCH/JPY', price: 54200, change: 1.10, alloc: 0, isOwned: false, holdingVal: 0, color: '#0AC18E' },
+  { id: 'LTC', name: 'ライトコイン', symbol: 'LTC/JPY', price: 10400, change: 0.65, alloc: 0, isOwned: false, holdingVal: 0, color: '#345D9D' },
+  { id: 'SAND', name: 'サンドボックス', symbol: 'SAND/JPY', price: 48.2, change: -0.45, alloc: 0, isOwned: false, holdingVal: 0, color: '#0084FF' },
+  { id: 'CHZ', name: 'チリーズ', symbol: 'CHZ/JPY', price: 11.2, change: 3.10, alloc: 0, isOwned: false, holdingVal: 0, color: '#CD0124' },
+  { id: 'XLM', name: 'ステラルーメン', symbol: 'XLM/JPY', price: 16.4, change: 0.95, alloc: 0, isOwned: false, holdingVal: 0, color: '#14B6EB' },
+  { id: 'ETC', name: 'イーサリアムクラシック', symbol: 'ETC/JPY', price: 3280, change: 1.40, alloc: 0, isOwned: false, holdingVal: 0, color: '#328332' },
+  { id: 'IOST', name: 'アイオーエスティ', symbol: 'IOST/JPY', price: 0.98, change: 5.40, alloc: 0, isOwned: false, holdingVal: 0, color: '#1C1C1C' }
 ];
-
-let selectedCoinId = 'ALL';
 
 let db = {
   coins: COIN_MASTER,
-  selectedCoinId: 'ALL',
-  totalFundValueJpy: 102697, // 元本10万円 + 利益2697円
   totalProfitJpy: 2697,
   todayProfitJpy: 2158,
   winRate: 82.4,
@@ -42,33 +38,24 @@ let db = {
       id: 'pocketA',
       name: 'A: 堅実ロボ',
       strategyName: '全銘柄ボリンジャー逆張り＆RSI防御',
-      tag: '低リスク・全銘柄監視',
       realizedPnL: 820,
       unrealizedPnL: 65,
-      winCount: 22,
-      tradeCount: 24,
-      statusText: '🟢 BTC/ETH/SOLの押し目安全買い増し待機中',
+      statusText: '🟢 保有銘柄の押し目安全買い増し待機中',
     },
     {
       id: 'pocketB',
       name: 'B: AIデイトレ',
       strategyName: 'Geminiマルチ暗号資産スキャルピング',
-      tag: '高回転・ボラティリティ狩り',
       realizedPnL: 1480,
       unrealizedPnL: 92,
-      winCount: 48,
-      tradeCount: 58,
       statusText: '⚡ XRP(+4.8%) & DOGE(+6.2%)の急騰波を秒速利確',
     },
     {
       id: 'pocketC',
       name: 'C: コピートレード',
       strategyName: 'クジラ大口オンチェーンマルチ追従',
-      tag: 'アルトコイン爆発トレンド追従',
       realizedPnL: 940,
       unrealizedPnL: 140,
-      winCount: 16,
-      tradeCount: 19,
       statusText: '🐋 SOL大口ウォレット(3.5万SOL)のステーキング買い増し追従中',
     },
   ],
@@ -112,24 +99,6 @@ app.get('/api/status', (req, res) => {
   res.json(db);
 });
 
-app.post('/api/tune', (req, res) => {
-  const { option } = req.body;
-  res.json({ success: true, message: `マルチ暗号資産AI方針【${option}】を適用しました` });
-});
-
-app.post('/api/rebalance', (req, res) => {
-  const { allocations } = req.body;
-  if (allocations) {
-    db.coins.forEach(c => {
-      if (allocations[c.id] !== undefined) {
-        c.alloc = allocations[c.id];
-      }
-    });
-  }
-  res.json({ success: true, message: 'ポートフォリオ配分比率を更新いたしました！' });
-});
-
-// 完全一体型マルチ暗号資産サイバーUI
 const MULTI_COIN_CYBER_HTML = `<!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -143,20 +112,30 @@ const MULTI_COIN_CYBER_HTML = `<!DOCTYPE html>
     
     /* Header */
     .header { background: #050B14; border-bottom: 1px solid rgba(0,240,255,0.2); padding: 10px 14px; }
-    .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .header-top { display: flex; justify-content: space-between; align-items: center; }
     .title-cyber { color: #00FF66; font-size: 19px; font-weight: 900; letter-spacing: 1px; text-shadow: 0 0 10px rgba(0,255,102,0.6); }
     .title-sub { color: #00F0FF; font-size: 8px; font-weight: 700; letter-spacing: 1.5px; opacity: 0.85; }
-    .header-actions { display: flex; gap: 6px; }
+    .header-actions { display: flex; gap: 5px; }
     .header-btn { background: #0F1E36; border: 1px solid rgba(0,240,255,0.3); color: #E2F1FF; font-size: 11px; font-weight: 700; padding: 5px 8px; border-radius: 6px; cursor: pointer; }
     
-    /* Coin Selector Ribbon (Plan 1: ワンタップ銘柄切り替え) */
-    .coin-ribbon { display: flex; gap: 6px; overflow-x: auto; padding: 6px 14px; background: #040913; border-bottom: 1px solid rgba(0,240,255,0.15); scrollbar-width: none; }
+    /* Filter & Sort Bar above Ribbon */
+    .ribbon-control-bar { display: flex; justify-content: space-between; align-items: center; padding: 6px 14px; background: #060D1A; border-bottom: 1px solid rgba(0,240,255,0.1); }
+    .filter-toggles { display: flex; background: #0A162B; border-radius: 6px; padding: 2px; border: 1px solid #162C4A; gap: 2px; }
+    .filter-btn { background: transparent; border: none; color: #7B93B2; font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 4px; cursor: pointer; transition: all 0.2s; }
+    .filter-btn.active { background: #00FF66; color: #021206; box-shadow: 0 0 8px rgba(0,255,102,0.4); }
+    .sort-actions { display: flex; align-items: center; gap: 6px; }
+    .sort-select { background: #0F1E36; border: 1px solid rgba(0,240,255,0.3); color: #00F0FF; font-size: 10px; font-weight: bold; padding: 3px 6px; border-radius: 6px; outline: none; cursor: pointer; }
+
+    /* Coin Selector Ribbon */
+    .coin-ribbon { display: flex; gap: 6px; overflow-x: auto; padding: 8px 14px; background: #040913; border-bottom: 1px solid rgba(0,240,255,0.15); scrollbar-width: none; }
     .coin-ribbon::-webkit-scrollbar { display: none; }
-    .coin-tab { flex-shrink: 0; background: #091526; border: 1px solid #162C4A; border-radius: 8px; padding: 5px 10px; cursor: pointer; display: flex; flex-direction: column; align-items: center; transition: all 0.2s; }
+    .coin-tab { flex-shrink: 0; background: #091526; border: 1px solid #162C4A; border-radius: 8px; padding: 6px 10px; cursor: pointer; display: flex; flex-direction: column; align-items: center; transition: all 0.2s; position: relative; }
     .coin-tab.active { background: rgba(0,255,102,0.15); border-color: #00FF66; box-shadow: 0 0 10px rgba(0,255,102,0.3); }
+    .coin-tab.is-owned { border-top: 2px solid #00FF66; }
+    .owned-badge { position: absolute; top: -5px; right: -3px; background: #00FF66; color: #031208; font-size: 7px; font-weight: 900; padding: 1px 3px; border-radius: 3px; }
     .coin-tab-name { font-size: 11px; font-weight: 800; color: #FFF; display: flex; align-items: center; gap: 4px; }
-    .coin-tab-price { font-size: 9px; font-family: monospace; color: #A0B4CC; }
-    .coin-tab-chg { font-size: 8px; font-weight: 700; }
+    .coin-tab-price { font-size: 9px; font-family: monospace; color: #A0B4CC; margin-top: 2px; }
+    .coin-tab-chg { font-size: 8px; font-weight: 700; margin-top: 1px; }
     .chg-up { color: #00FF66; }
     .chg-down { color: #FF3366; }
 
@@ -173,7 +152,7 @@ const MULTI_COIN_CYBER_HTML = `<!DOCTYPE html>
     .metric-lbl { color: #657B96; font-size: 9px; margin-bottom: 2px; }
     .metric-v { font-size: 12px; font-weight: 800; font-family: monospace; color: #00FF66; }
 
-    /* Plan 2: Portfolio Visualizer Bar */
+    /* Portfolio Visualizer Bar */
     .portfolio-box { background: #081222; border-radius: 12px; padding: 12px; border: 1px solid #182C4A; margin-bottom: 12px; }
     .portfolio-hdr { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
     .portfolio-title { font-size: 12px; font-weight: 800; color: #00F0FF; }
@@ -220,6 +199,10 @@ const MULTI_COIN_CYBER_HTML = `<!DOCTYPE html>
     .modal-title { color: #00FF66; font-size: 14px; font-weight: 800; }
     .modal-close { background: #162842; color: #A0B8D4; border: none; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 11px; }
     .modal-body { padding: 14px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 10px; }
+    
+    /* Reorder list items */
+    .reorder-item { background: #0A162B; border: 1px solid #193457; border-radius: 8px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; }
+    .reorder-btn { background: #122540; color: #00F0FF; border: 1px solid #1F3D68; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold; }
   </style>
 </head>
 <body>
@@ -232,14 +215,32 @@ const MULTI_COIN_CYBER_HTML = `<!DOCTYPE html>
           <div class="title-sub">COINCHECK 全16銘柄 AIマルチファンド</div>
         </div>
         <div class="header-actions">
-          <button class="header-btn" onclick="openPortfolioModal()">📊 配分設定</button>
-          <button class="header-btn" onclick="openBrain()">🧠 脳内ログ</button>
-          <button class="header-btn" onclick="openChat()">💬 執事対話</button>
+          <button class="header-btn" onclick="openPortfolioModal()">📊 配分</button>
+          <button class="header-btn" onclick="openReorderModal()">↕️ 並替</button>
+          <button class="header-btn" onclick="openBrain()">🧠 脳内</button>
+          <button class="header-btn" onclick="openChat()">💬 執事</button>
         </div>
       </div>
     </div>
 
-    <!-- Plan 1: ワンタップ銘柄切り替えリボン (Coin Ribbon) -->
+    <!-- Filter & Sort Bar (ご要望①: 保有中のみ切り替え ＆ ソート) -->
+    <div class="ribbon-control-bar">
+      <div class="filter-toggles">
+        <button class="filter-btn active" id="btnFilterAll" onclick="setFilter('ALL')">🌐 全銘柄</button>
+        <button class="filter-btn" id="btnFilterOwned" onclick="setFilter('OWNED')">💼 保有中のみ</button>
+      </div>
+      <div class="sort-actions">
+        <span style="font-size:9px;color:#7B93B2;">並び順:</span>
+        <select class="sort-select" id="sortSelect" onchange="changeSort(this.value)">
+          <option value="custom">⭐ おすすめ順</option>
+          <option value="holding">💰 保有額順</option>
+          <option value="gain">🚀 急騰順 (+%)</option>
+          <option value="name">🔤 銘柄名順</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Coin Selector Ribbon (ワンタップ銘柄切り替え) -->
     <div class="coin-ribbon" id="coinRibbon">
       <!-- Generated via JS -->
     </div>
@@ -267,7 +268,7 @@ const MULTI_COIN_CYBER_HTML = `<!DOCTYPE html>
         </div>
       </div>
 
-      <!-- Plan 2: マルチ暗号資産ポートフォリオ配分バー -->
+      <!-- Portfolio Allocation Bar -->
       <div class="portfolio-box">
         <div class="portfolio-hdr">
           <span class="portfolio-title">🪙 AIマルチ暗号資産ポートフォリオ配分</span>
@@ -306,7 +307,23 @@ const MULTI_COIN_CYBER_HTML = `<!DOCTYPE html>
     </div>
   </div>
 
-  <!-- Portfolio Modal (Plan 2) -->
+  <!-- Reorder / Custom Sort Modal (ご要望②: 自由並び替え画面) -->
+  <div class="modal" id="reorderModal">
+    <div class="modal-box">
+      <div class="modal-hdr">
+        <span class="modal-title">↕️ 銘柄の並び順カスタマイズ</span>
+        <button class="modal-close" onclick="closeModal('reorderModal')">✕ 閉じる</button>
+      </div>
+      <div class="modal-body">
+        <div style="background:#00F0FF12;border:1px solid #00F0FF44;border-radius:8px;padding:8px;font-size:11px;color:#D4EEFF;">
+          💡 よく見る銘柄や所有している仮想通貨を上（前）に移動できます！
+        </div>
+        <div id="reorderList" style="display:flex;flex-direction:column;gap:6px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Portfolio Modal -->
   <div class="modal" id="portfolioModal">
     <div class="modal-box">
       <div class="modal-hdr">
@@ -335,12 +352,12 @@ const MULTI_COIN_CYBER_HTML = `<!DOCTYPE html>
         <button class="modal-close" onclick="closeModal('brainModal')">✕ 閉じる</button>
       </div>
       <div class="modal-body">
-        <div class="proposal-card">
+        <div class="proposal-card" style="background:#0A1526;border-radius:10px;padding:12px;border:1px solid #193457;">
           <div style="color:#00F0FF;font-weight:bold;font-size:11px;">B: AIデイトレからの全銘柄改善提案</div>
           <div style="color:#FFF;font-size:12px;font-weight:bold;margin:2px 0;">アルトコイン急騰時の利確感度チューニング</div>
           <div style="color:#A0B8D4;font-size:11px;margin:4px 0 8px 0;">XRPやDOGEの急騰時、+5%で利確するか、+15%まで引っ張るかのご指示を仰ぎたく存じます。</div>
-          <div class="prop-option a" onclick="applyTuning('A')">【A】電光石火（+5%で確実に利確・勝率最優先）</div>
-          <div class="prop-option b" onclick="applyTuning('B')">【B】爆益追従（+15%超の爆発トレンドまでホールド）</div>
+          <div onclick="applyTuning('A')" style="background:rgba(0,240,255,0.08);border:1.5px solid rgba(0,240,255,0.4);color:#00F0FF;padding:10px;border-radius:8px;margin-top:6px;cursor:pointer;">【A】電光石火（+5%で確実に利確・勝率最優先）</div>
+          <div onclick="applyTuning('B')" style="background:rgba(191,90,242,0.08);border:1.5px solid rgba(191,90,242,0.4);color:#DF9BFF;padding:10px;border-radius:8px;margin-top:6px;cursor:pointer;">【B】爆益追従（+15%超の爆発トレンドまでホールド）</div>
           <div id="tuningStatus"></div>
         </div>
       </div>
@@ -365,8 +382,12 @@ const MULTI_COIN_CYBER_HTML = `<!DOCTYPE html>
   <script>
     let fundData = null;
     let selectedCoin = 'ALL';
+    let filterMode = 'ALL'; // 'ALL' or 'OWNED'
+    let currentSort = 'custom'; // 'custom', 'holding', 'gain', 'name'
+    let customOrder = [];
+
     let chatHistory = [
-      { sender: 'butler', text: 'ご主人様、Coincheck取扱い全16銘柄のマルチ暗号資産ファンドへようこそ！ビットコインだけでなく、イーサリアムやリップル、ソラナ、ドージコインなども24時間全自動でリスク分散しながら利益を最大化しております。' }
+      { sender: 'butler', text: 'ご主人様、Coincheck全16銘柄マルチファンドへようこそ！ご所有の仮想通貨の並び替えや、保有銘柄だけの絞り込みチェックも瞬時に行えるよう最適化いたしました。' }
     ];
 
     async function fetchStatus() {
@@ -374,9 +395,47 @@ const MULTI_COIN_CYBER_HTML = `<!DOCTYPE html>
         const res = await fetch('/api/status');
         if (res.ok) {
           fundData = await res.json();
+          if (customOrder.length === 0) {
+            customOrder = fundData.coins.map(c => c.id);
+          }
           renderDashboard();
         }
       } catch (e) {}
+    }
+
+    function setFilter(mode) {
+      filterMode = mode;
+      document.getElementById('btnFilterAll').classList.toggle('active', mode === 'ALL');
+      document.getElementById('btnFilterOwned').classList.toggle('active', mode === 'OWNED');
+      renderDashboard();
+    }
+
+    function changeSort(sortVal) {
+      currentSort = sortVal;
+      renderDashboard();
+    }
+
+    function getSortedCoins() {
+      if (!fundData) return [];
+      let list = [...fundData.coins];
+
+      // 1. Filter
+      if (filterMode === 'OWNED') {
+        list = list.filter(c => c.isOwned || c.alloc > 0);
+      }
+
+      // 2. Sort
+      if (currentSort === 'holding') {
+        list.sort((a, b) => (b.holdingVal || 0) - (a.holdingVal || 0));
+      } else if (currentSort === 'gain') {
+        list.sort((a, b) => b.change - a.change);
+      } else if (currentSort === 'name') {
+        list.sort((a, b) => a.id.localeCompare(b.id));
+      } else {
+        // Custom order
+        list.sort((a, b) => customOrder.indexOf(a.id) - customOrder.indexOf(b.id));
+      }
+      return list;
     }
 
     function selectCoin(coinId) {
@@ -386,6 +445,8 @@ const MULTI_COIN_CYBER_HTML = `<!DOCTYPE html>
 
     function renderDashboard() {
       if (!fundData) return;
+
+      const displayCoins = getSortedCoins();
 
       // Render Ribbon
       const ribbon = document.getElementById('coinRibbon');
@@ -397,13 +458,14 @@ const MULTI_COIN_CYBER_HTML = `<!DOCTYPE html>
         </div>
       \`;
 
-      fundData.coins.forEach(c => {
+      displayCoins.forEach(c => {
         const isAct = selectedCoin === c.id;
         const chgCls = c.change >= 0 ? 'chg-up' : 'chg-down';
         const chgSign = c.change >= 0 ? '+' : '';
         const priceFmt = c.price < 1 ? c.price.toFixed(4) : c.price < 100 ? c.price.toFixed(1) : c.price.toLocaleString();
         ribbonHtml += \`
-          <div class="coin-tab \${isAct?'active':''}" onclick="selectCoin('\${c.id}')">
+          <div class="coin-tab \${isAct?'active':''} \${c.isOwned?'is-owned':''}" onclick="selectCoin('\${c.id}')">
+            \${c.isOwned ? '<span class="owned-badge">保有</span>' : ''}
             <div class="coin-tab-name" style="color:\${c.color}">● \${c.id}</div>
             <div class="coin-tab-price">¥\${priceFmt}</div>
             <div class="coin-tab-chg \${chgCls}">\${chgSign}\${c.change}%</div>
@@ -457,7 +519,7 @@ const MULTI_COIN_CYBER_HTML = `<!DOCTYPE html>
         \`;
       }).join('');
 
-      // Trades (Filter by selected coin if not ALL)
+      // Trades
       const filteredTrades = selectedCoin === 'ALL'
         ? fundData.trades
         : fundData.trades.filter(t => t.coin === selectedCoin);
@@ -470,6 +532,55 @@ const MULTI_COIN_CYBER_HTML = `<!DOCTYPE html>
           <span style="color:#00FF66;font-family:monospace;font-weight:bold;">+¥\${tr.profitJpy || 80}</span>
         </div>
       \`).join('');
+    }
+
+    function openReorderModal() {
+      document.getElementById('reorderModal').classList.add('active');
+      renderReorderList();
+    }
+
+    function renderReorderList() {
+      const container = document.getElementById('reorderList');
+      container.innerHTML = customOrder.map((coinId, idx) => {
+        const c = fundData.coins.find(item => item.id === coinId);
+        if (!c) return '';
+        return \`
+          <div class="reorder-item">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span style="color:#657B96;font-size:10px;width:16px;">#\${idx + 1}</span>
+              <span style="color:\${c.color};font-weight:bold;">● \${c.id}</span>
+              <span style="color:#A0B8D4;font-size:11px;">\${c.name}</span>
+              \${c.isOwned ? '<span style="background:#00FF6622;color:#00FF66;font-size:8px;padding:1px 4px;border-radius:3px;font-weight:bold;">保有中</span>' : ''}
+            </div>
+            <div style="display:flex;gap:4px;">
+              <button class="reorder-btn" onclick="moveOrder('\${c.id}', -1)" \${idx===0?'disabled style=\"opacity:0.3\"':''}>▲ 上へ</button>
+              <button class="reorder-btn" onclick="moveOrder('\${c.id}', 1)" \${idx===customOrder.length-1?'disabled style=\"opacity:0.3\"':''}>▼ 下へ</button>
+              <button class="reorder-btn" onclick="toggleOwnership('\${c.id}')" style="color:\${c.isOwned?'#FF6688':'#00FF66'};">\${c.isOwned?'保有解除':'保有に追加'}</button>
+            </div>
+          </div>
+        \`;
+      }).join('');
+    }
+
+    function moveOrder(coinId, dir) {
+      const idx = customOrder.indexOf(coinId);
+      if (idx < 0) return;
+      const targetIdx = idx + dir;
+      if (targetIdx < 0 || targetIdx >= customOrder.length) return;
+      const temp = customOrder[idx];
+      customOrder[idx] = customOrder[targetIdx];
+      customOrder[targetIdx] = temp;
+      renderReorderList();
+      renderDashboard();
+    }
+
+    function toggleOwnership(coinId) {
+      const c = fundData.coins.find(item => item.id === coinId);
+      if (c) {
+        c.isOwned = !c.isOwned;
+        renderReorderList();
+        renderDashboard();
+      }
     }
 
     function openPortfolioModal() {
@@ -497,6 +608,7 @@ const MULTI_COIN_CYBER_HTML = `<!DOCTYPE html>
       const target = fundData.coins.find(c => c.id === coinId);
       if (target) {
         target.alloc = parseInt(val);
+        target.isOwned = target.alloc > 0;
         renderDashboard();
         renderAllocSliders();
       }
@@ -506,14 +618,17 @@ const MULTI_COIN_CYBER_HTML = `<!DOCTYPE html>
       if (preset === 'ai') {
         fundData.coins.forEach(c => {
           c.alloc = c.id === 'BTC' ? 40 : c.id === 'ETH' ? 25 : c.id === 'XRP' ? 15 : c.id === 'SOL' ? 10 : c.id === 'DOGE' ? 5 : c.id === 'SHIB' ? 2 : 1;
+          c.isOwned = c.alloc > 0;
         });
       } else if (preset === 'btc_heavy') {
         fundData.coins.forEach(c => {
           c.alloc = c.id === 'BTC' ? 70 : c.id === 'ETH' ? 20 : c.id === 'SOL' ? 10 : 0;
+          c.isOwned = c.alloc > 0;
         });
       } else if (preset === 'alt_explosive') {
         fundData.coins.forEach(c => {
           c.alloc = c.id === 'XRP' ? 30 : c.id === 'DOGE' ? 25 : c.id === 'SOL' ? 20 : c.id === 'SHIB' ? 15 : c.id === 'BTC' ? 10 : 0;
+          c.isOwned = c.alloc > 0;
         });
       }
       renderDashboard();
