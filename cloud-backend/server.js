@@ -7,7 +7,7 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// Coincheck ご主人様の実保有資産プリセット
+// Coincheck ご主人様の実保有資産マスターデータ（初期値: 総額約16,601円）
 const COIN_MASTER = [
   { id: 'BTC', name: 'ビットコイン', symbol: 'BTC/JPY', price: 13580000, change: 1.38, amount: 0, isOwned: false, color: '#F7931A' },
   { id: 'ETH', name: 'イーサリアム', symbol: 'ETH/JPY', price: 412000, change: 2.15, amount: 0.01212994, isOwned: true, color: '#627EEA' },
@@ -184,9 +184,9 @@ const MULTI_COIN_CYBER_HTML = `<!DOCTYPE html>
     .asset-subval { font-size: 10px; color: #7B93B2; font-family: monospace; text-align: right; margin-top: 2px; }
 
     /* Top quick reset bar */
-    .asset-action-toolbar { display: flex; justify-content: space-between; align-items: center; background: #09162A; border: 1px solid #1A3459; border-radius: 8px; padding: 8px 10px; }
-    .btn-clear-all { background: #38121E; border: 1px solid #FF3366; color: #FFA0B8; font-size: 11px; font-weight: bold; padding: 5px 10px; border-radius: 6px; cursor: pointer; }
-    .btn-clear-all:hover { background: #FF3366; color: #FFF; }
+    .asset-action-toolbar { display: flex; justify-content: space-between; align-items: center; background: #09162A; border: 1px solid #1A3459; border-radius: 8px; padding: 8px 10px; gap: 6px; }
+    .btn-clear-all { background: #122B22; border: 1px solid #00FF66; color: #00FF66; font-size: 11px; font-weight: bold; padding: 6px 8px; border-radius: 6px; cursor: pointer; flex: 1; }
+    .btn-clear-all:hover { background: #00FF66; color: #000; }
 
     /* Reorder items */
     .reorder-item { background: #0A162B; border: 1px solid #193457; border-radius: 8px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; }
@@ -217,8 +217,8 @@ const MULTI_COIN_CYBER_HTML = `<!DOCTYPE html>
     <!-- Filter & Sort Bar -->
     <div class="ribbon-control-bar">
       <div class="filter-toggles">
-        <button class="filter-btn active" id="btnFilterAll" onclick="setFilter('ALL')">🌐 全銘柄</button>
-        <button class="filter-btn" id="btnFilterOwned" onclick="setFilter('OWNED')">💼 保有中のみ</button>
+        <button class="filter-btn active" id="btnFilterAll" onclick="setFilter('ALL')" title="Coincheck全16銘柄の相場を表示">🌐 全銘柄</button>
+        <button class="filter-btn" id="btnFilterOwned" onclick="setFilter('OWNED')" title="ご主人様が保有している4銘柄のみ表示">💼 保有中のみ (4銘柄)</button>
       </div>
       <div class="sort-actions">
         <span style="font-size:9px;color:#7B93B2;">並び順:</span>
@@ -314,13 +314,13 @@ const MULTI_COIN_CYBER_HTML = `<!DOCTYPE html>
       </div>
       <div class="modal-body">
         <div style="background:#00FF6615;border:1px solid #00FF6644;border-radius:8px;padding:8px;font-size:11px;color:#A2FFCE;">
-          ✨ Coincheck等で実際に保有している数量を入力してください！<br>
-          入力するだけで<b>即時自動保存</b>されます。持っていない銘柄は【0クリア】で未所持に設定できます。
+          ✨ Coincheckで実際に保有している数量を入力してください！<br>
+          入力するだけで<b>即時自動保存</b>されます。
         </div>
 
         <div class="asset-action-toolbar">
-          <span style="font-size:11px;color:#A0B8D4;">持っているコインだけ登録したい場合:</span>
-          <button class="btn-clear-all" onclick="clearAllHoldingsToZero()">🧹 全銘柄を0枚にリセット</button>
+          <button class="btn-clear-all" onclick="resetToOwnerRealAssets()">🔄 ご主人様の試算（¥16,601）に初期化</button>
+          <button class="btn-clear-all" style="background:#2A1220;border-color:#882244;color:#FF7799;" onclick="clearAllHoldingsToZero()">🧹 全銘柄を0枚にする</button>
         </div>
 
         <div id="assetInputList" style="display:flex;flex-direction:column;gap:6px;"></div>
@@ -330,7 +330,7 @@ const MULTI_COIN_CYBER_HTML = `<!DOCTYPE html>
       <div class="modal-ftr">
         <div class="modal-ftr-summary">
           <span>ご主人様の登録総資産 概算:</span>
-          <span class="modal-ftr-val" id="modalFooterTotalVal">¥0</span>
+          <span class="modal-ftr-val" id="modalFooterTotalVal">¥16,601</span>
         </div>
         <button class="modal-ftr-btn" onclick="saveAndApplyModal()">💾 保存してダッシュボードに反映する</button>
       </div>
@@ -397,12 +397,45 @@ const MULTI_COIN_CYBER_HTML = `<!DOCTYPE html>
     let currentSort = 'custom';
     let customOrder = [];
 
-    // ローカルストレージからご主人様の所持数を読み込み
+    const REAL_OWNER_PRESET = {
+      ETH: 0.01212994,
+      XRP: 11.538,
+      DOGE: 251.761,
+      SHIB: 1385600,
+      BTC: 0, SOL: 0, AVAX: 0, LINK: 0, MATIC: 0,
+      BCH: 0, LTC: 0, SAND: 0, CHZ: 0, XLM: 0, ETC: 0, IOST: 0
+    };
+
+    // ローカルストレージからご主人様の所持数を読み込み（旧誤入力は自動クリーンアップ）
     function loadSavedAmounts() {
       try {
         const saved = localStorage.getItem('rakushite_my_holdings');
+        const isV4 = localStorage.getItem('rakushite_preset_v4');
+
+        if (!saved || !isV4) {
+          localStorage.setItem('rakushite_my_holdings', JSON.stringify(REAL_OWNER_PRESET));
+          localStorage.setItem('rakushite_preset_v4', 'true');
+          if (fundData) {
+            fundData.coins.forEach(c => {
+              c.amount = REAL_OWNER_PRESET[c.id] || 0;
+              c.isOwned = c.amount > 0;
+            });
+          }
+          return;
+        }
+
         if (saved && fundData) {
           const parsed = JSON.parse(saved);
+          // 誤って入力された旧7300万円データ（1000以上のXRP等）を検知した場合は自動修正
+          if (parsed.XRP > 1000 || parsed.DOGE > 10000 || parsed.SHIB > 2000000) {
+            localStorage.setItem('rakushite_my_holdings', JSON.stringify(REAL_OWNER_PRESET));
+            fundData.coins.forEach(c => {
+              c.amount = REAL_OWNER_PRESET[c.id] || 0;
+              c.isOwned = c.amount > 0;
+            });
+            return;
+          }
+
           fundData.coins.forEach(c => {
             if (parsed[c.id] !== undefined) {
               c.amount = parseFloat(parsed[c.id]) || 0;
@@ -414,7 +447,7 @@ const MULTI_COIN_CYBER_HTML = `<!DOCTYPE html>
     }
 
     let chatHistory = [
-      { sender: 'butler', text: 'ご主人様、実保有資産連動ファンドへようこそ！ご主人様がお持ちの4銘柄（DOGE: 251.7枚, ETH: 0.0121枚, SHIB: 138.5万枚, XRP: 11.5枚）のリアルな評価額（約¥16,600）に完全同期して自律運用エンジンが24時間体制で稼働しております！' }
+      { sender: 'butler', text: 'ご主人様、実保有資産連動ファンドへようこそ！ご主人様がお持ちの4銘柄（DOGE: 251.7枚, ETH: 0.0121枚, SHIB: 138.5万枚, XRP: 11.5枚）のリアルな評価額（約¥16,601）に完全同期して自律運用エンジンが24時間体制で稼働しております！' }
     ];
 
     async function fetchStatus() {
@@ -692,6 +725,24 @@ const MULTI_COIN_CYBER_HTML = `<!DOCTYPE html>
       }
     }
 
+    function resetToOwnerRealAssets() {
+      fundData.coins.forEach(c => {
+        const amt = REAL_OWNER_PRESET[c.id] || 0;
+        c.amount = amt;
+        c.isOwned = amt > 0;
+        const inp = document.getElementById('input_amt_' + c.id);
+        if (inp) inp.value = amt;
+        const prev = document.getElementById('val_prev_' + c.id);
+        if (prev) {
+          const val = Math.round(amt * c.price);
+          prev.innerHTML = amt > 0 ? '≈ ¥' + val.toLocaleString() : '<span style=\"color:#556A84;\">未所持 (¥0)</span>';
+        }
+      });
+      updateModalFooterTotal();
+      saveAssetHoldings(false);
+      showToast('🔄 ご主人様の試算（¥16,601）に初期化しました！');
+    }
+
     function clearAllHoldingsToZero() {
       if (confirm('すべての銘柄の所持数を「0枚（未所持）」にリセットしますか？\\n※ リセット後、お持ちのコインだけ数値を入力できます。')) {
         fundData.coins.forEach(c => {
@@ -742,6 +793,7 @@ const MULTI_COIN_CYBER_HTML = `<!DOCTYPE html>
       });
       try {
         localStorage.setItem('rakushite_my_holdings', JSON.stringify(holdingsMap));
+        localStorage.setItem('rakushite_preset_v4', 'true');
       } catch (e) {}
 
       renderDashboard();
@@ -809,7 +861,7 @@ const MULTI_COIN_CYBER_HTML = `<!DOCTYPE html>
       if (type === 'recent5min') {
         reply = 'ご主人様、直近5分間はご登録いただいた4銘柄（DOGE/ETH/SHIB/XRP）のボラティリティをAIデイトレが掴み、利ざやを掠め取りました！';
       } else if (type === 'todayTotal') {
-        reply = 'ご主人様、実保有資産（約¥16,600）ベースでの本日運用益は順調にプラス推移しております！';
+        reply = 'ご主人様、実保有資産（約¥16,601）ベースでの本日運用益は順調にプラス推移しております！';
       } else {
         reply = 'ご主人様、現在のアルト相場はご主人様のポートフォリオ（DOGE/ETH/SHIB/XRP）にとって良好なモメンタムを維持しております！';
       }
